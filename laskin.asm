@@ -96,3 +96,14 @@ virhe:
 		syscall	
 
 		j	main				# HypŠtŠŠn takaisin ohjelman alkuun
+		
+#aliohjelmat
+lisaaminen:	jr	$ra
+
+vahennys:	jr	$ra
+
+kertominen:	jr	$ra
+
+jako:		jr	$ra
+
+potenssi:	jr	$ra
