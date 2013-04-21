@@ -3,7 +3,7 @@
 		.globl main
 		.data
 		
-# MŠŠritetŠŠn tarkastelua varten merkkien ascii-arvot 
+# Maaritetaan tarkastelua varten merkkien ascii-arvot 
 # heksalukuina
 potenssi:	.byte	0x5E
 kerto:		.byte	0x2A
@@ -14,9 +14,9 @@ pilkku:		.byte	0x2C
 ylaraja:	.byte	0x39
 alaraja:	.byte	0x30
 
-# MŠŠritetŠŠn ohjelman aikana tarvittavat tulosteet
-ALKUTULOSTE:	.asciiz "SyštŠ lauseke: "
-VIRHETULOSTE:	.asciiz "\nVirheellinen syšte.\n"
+# Maaritetaan ohjelman aikana tarvittavat tulosteet
+ALKUTULOSTE:	.asciiz "Syota lauseke: "
+VIRHETULOSTE:	.asciiz "\nVirheellinen syote.\n"
 
 SYOTE:		.asciiz ""
 		.space 30
@@ -45,19 +45,19 @@ lueSyote:
 							# muuten pysytŠŠn samassa
 		
 		# 3. kierroksen tarkastus		
-		#beq	$t0, 2, v3tarkistus		# Pilkun jŠlkeen on tultava numero
+		#beq	$t0, 2, v3tarkistus		# Pilkun jalkeen on tultava numero
 		
 		# 4. kierroksen tarkastus
 		#beq	$t0, 3, v4tarkistus		# Pilkun jŠlkeinen toinen merkki voi olla joko numero
 							# tai operaattori. Jos luetaan operaattori, siirrytŠŠn
 							# seuraavaan tarkasteluun, muuten pysytŠŠn samassa.
 
-		# Jos lšydetŠŠn operaattori, hypŠtŠŠn tarkistusten alkuun.
+		# Jos lšydetaan operaattori, hypataan tarkistusten alkuun.
 		# Erikoistilanteena potenssi, jolloin merkin jŠlkeen etsitŠŠn kokonaislukua		
 		
-pinotallennus:	j	lueSyote			# TŠhŠn pinoon tallentaminen
+pinotallennus:	j	lueSyote			# Tahan pinoon tallentaminen
 
-pilkkutilanne:	j 	pilkkutilanne			# MitŠ tŠŠllŠ tehdŠŠn?
+pilkkutilanne:	j 	pilkkutilanne			# Mita talla tehdaan?
 
 loppu:		j	loppu
 
@@ -67,7 +67,7 @@ v1tarkistus:	lb	$t1, alaraja			# Ladataan numeroiden ascii-alaraja
 		lb	$t1, ylaraja			# Ladtaan numeroiden ylŠraja
 		sle	$t3, $t3, $t1			# Katsotaan, onko luettu merkki rajan alapuolella
 		
-		and	$t1, $t2, $t3			# Jos siis rajojen vŠlissŠ, merkki on numero ja 
+		and	$t1, $t2, $t3			# Jos siis rajojen valissa, merkki on numero ja 
 							# asetetaan $t1 = 1
 		beqz	$t1, virhe			# Jos merkki ei ollut numero, hypŠtŠŠn virheeseen
 		addi	$t0, $t0, 1			# Kasvatetaan tarkastelulaskuria
@@ -77,15 +77,15 @@ v1tarkistus:	lb	$t1, alaraja			# Ladataan numeroiden ascii-alaraja
 v2tarkistus:	lb	$t1, alaraja			# Ladataan numeroiden ascii-alaraja
 		lb	$t3, 0($s0)			# Ladataan luettu merkki
 		sge	$t2, $t3, $t1			# Katsotaan, onko luettu merkki rajan ylŠpuolella
-		lb	$t1, ylaraja			# Ladtaan numeroiden ylŠraja
+		lb	$t1, ylaraja			# Ladtaan numeroiden ylaraja
 		sle	$t4, $t3, $t1			# Katsotaan, onko luettu merkki rajan alapuolella
 		
-		and	$t1, $t2, $t4			# Jos siis rajojen vŠlissŠ, merkki on numero ja 
+		and	$t1, $t2, $t4			# Jos siis rajojen valissa, merkki on numero ja 
 							# asetetaan $t1 = 1
 		beq	$t1, 1, pinotallennus		# Jos kyseessŠ numero, hypŠtŠŠn pinotallennukseen
 		
 		lb	$t1, pilkku			# Ladataan numeroiden ascii-alaraja
-		beq	$t1, $t3, pilkkutilanne		# Jos lšydetŠŠn pilkku, hypŠtŠŠn pilkkutilanteeseen
+		beq	$t1, $t3, pilkkutilanne		# Jos lšydetŠŠn pilkku, hypataan pilkkutilanteeseen
 		
 		j	virhe				# Jos kyseessŠ ei ollut numero eikŠ pilkku, hypŠtŠŠn
 							# virheeseen
@@ -95,15 +95,20 @@ virhe:
 		la	$a0, VIRHETULOSTE		# Osoite josta tuloste luetaan
 		syscall	
 
-		j	main				# HypŠtŠŠn takaisin ohjelman alkuun
+		j	main				# Hypataan takaisin ohjelman alkuun
 		
 #aliohjelmat
-lisaaminen:	jr	$ra
+lisaaminen:	#add.s	$,$,$
+		jr	$ra
 
-vahennys:	jr	$ra
+vahennys:	#sub.s	$,$,$
+		jr	$ra
 
-kertominen:	jr	$ra
+kertominen:	#loop add.s x kertaa
+		jr	$ra
 
-jako:		jr	$ra
+jako:		#
+		jr	$ra
 
-potenssi:	jr	$ra
+potenssi:	#
+		jr	$ra
