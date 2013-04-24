@@ -110,18 +110,19 @@ kasvatus:
 		addi	$s0, $s0, 1
 		j	alg
 
-lisaaPinoon:	addi	$sp, $sp, -4
+lisaaPinoon:	
 		addi	$s2, $s2, 1
 		sw	$t0, 0($sp)
+		addi	$sp, $sp, -4
 		addi	$s0, $s0, 1
 		j	alg
 		# Kaikki merkit haettu, käydään läpi pinoa
 		# Operaattori ulostulojonoon
 VIRHE:		j	VIRHE		
 parsittu:	
-		beqz	$s2, pinoTyhja
-		lw	$t0, 0($sp)
 		addi	$sp, $sp, 4
+		beqz	$s2, pinoTyhja
+		lw	$t0, 0($sp)	
 		addi	$s2, $s2, -1
 		addi	$s3, $s3, 1
 		sw	$t0, 0($s1)
@@ -137,27 +138,34 @@ pinoTyhja:
 laske:		lw	$t0, 0($s5)		# Ladataan merkki ulostulopinosta
 		addi	$s3, $s3, -1		# Vähennetään ulostulopinon laskuria
 						# Onko numero vai operaattori
-		beqz	$s3, laskeErotus
+						
 		beq	$t0, 0x5E, laskePotenssi
 		beq	$t0, 0x2A, laskeKerto
 		beq	$t0, 0x2F, laskeJako
 		beq	$t0, 0x2B, laskeSumma
 		beq	$t0, 0x2D, laskeErotus
 		
-		addi	$sp, $sp, 4
+		bltz	$s3, laskeErotus
 		sw	$t0, 0($sp)
+		addi	$sp, $sp, -4
+		addi	$s5, $s5, 4
 		addi	$s2, $s2, 1
+		addi	$s3, $s3, -1
 		j	laske
 
 laskePotenssi: 	j laskePotenssi
 laskeKerto:	j laskeKerto
 laskeJako:	j laskeJako
 
-laskeSumma:	lwc1	$f0, 0($sp)
-		addi	$sp, $sp, -4
+laskeSumma:	addi	$sp, $sp, 4
+		lwc1	$f0, 0($sp)
+		addi	$s2, $s2, -1
+		addi	$sp, $sp, 4
 		lwc1	$f1, 0($sp)
 		
 		add.s	$f0, $f0, $f1
+		swc1	$f0, 0($sp)
+		addi	$sp, $sp, -4
 		
 laskeErotus:	j laskeErotus
 
