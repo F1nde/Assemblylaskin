@@ -143,7 +143,7 @@ laske:		lw	$t0, 0($s5)		# Ladataan merkki ulostulopinosta
 		beq	$t0, 0x2B, laskeSumma
 		beq	$t0, 0x2D, laskeErotus
 		
-		bltz	$s3, laskeErotus
+		beqz	$t0, loppu
 		sw	$t0, 0($sp)
 		addi	$sp, $sp, -4
 		addi	$s5, $s5, 4
@@ -155,17 +155,25 @@ laskePotenssi: 	j laskePotenssi
 laskeKerto:	j laskeKerto
 laskeJako:	j laskeJako
 
-laskeSumma:	addi	$sp, $sp, 4
-		lwc1	$f0, 0($sp)
+laskeSumma:	lwc1	$f0, 8($sp)
 		addi	$s2, $s2, -1
-		addi	$sp, $sp, 4
-		lwc1	$f1, 0($sp)
+		lwc1	$f1, 4($sp)
 		
 		add.s	$f0, $f0, $f1
-		swc1	$f0, 0($sp)
-		addi	$sp, $sp, -4
+		swc1	$f0, 4($sp)
+		addi	$s5, $s5, 4
+		j	laske
 		
-laskeErotus:	j laskeErotus
+laskeErotus:	lwc1	$f0, 8($sp)
+		addi	$s2, $s2, -1
+		lwc1	$f1, 4($sp)
+		
+		sub.s	$f0, $f0, $f1
+		swc1	$f0, 4($sp)
+		addi	$s5, $s5, 4
+		j	laske
+		
+loppu:		j	loppu
 
 
 ##-******************************************************************************************-##
