@@ -133,8 +133,7 @@ pinoTyhja:
 		addi	$s5, $zero, 0x10014000	# Ulostulopinon osoite
 		addi	$sp, $sp, -4
 		
-laske:		lw	$t0, 8($s5)		# Ladataan merkki ulostulopinosta
-loppu:		j	loppu
+laske:		lw	$t0, 0($s5)		# Ladataan merkki ulostulopinosta
 		addi	$s3, $s3, -1		# Vähennetään ulostulopinon laskuria
 						# Onko numero vai operaattori
 						
