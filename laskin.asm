@@ -51,13 +51,13 @@ tutkiOperaattori:
 		seq	$t1, $t0, 0x5E		# Onko potenssi
 		beq	$t1, 1, lisaaPinoon
 		seq	$t1, $t0, 0x2A		# onko kerto
-		beq	$t1, 1, expVertailu
+		beq	$t1, 1, kertoVertailu
 		seq	$t1, $t0, 0x2F		# Onko jako
-		beq	$t1, 1, expVertailu
+		beq	$t1, 1, kertoVertailu
 		seq	$t1, $t0, 0x2B		# Onko summa
-		beq	$t1, 1, expVertailu
+		beq	$t1, 1, summaVertailu
 		seq	$t1, $t0, 0x2D		# Onko vähennys
-		beq	$t1, 1, expVertailu
+		beq	$t1, 1, summaVertailu
 		beqz	$t0, parsittu
 		beq	$t0, 10, parsittu
 
@@ -80,7 +80,7 @@ expVertailu:
 		addi	$sp, $sp, 4
 		j	expVertailu
 
-kertoVertailu	lw	$t1, 4($sp)		# Tarkastellaan pinon ensimmäistä merkkiä
+kertoVertailu:	lw	$t1, 4($sp)		# Tarkastellaan pinon ensimmäistä merkkiä
 		li	$t2, 0x5E		# Ladataan eksponentti
 		seq	$t3, $t2, $t1		# Katsotaan onko pinon päällä eksponentti
 		bnez	$t3, kPura
@@ -99,13 +99,30 @@ kPura:		sw	$t1, 0($s1)
 		addi	$sp, $sp, 4
 		j	kertoVertailu
 
-summaVertailu:	lw	$t1, 4($sp)
-		sw	$t1, 0($s1)
+summaVertailu:	lw	$t1, 4($sp)		# Tarkastellaan pinon ensimmäistä merkkiä
+		li	$t2, 0x5E		# Ladataan eksponentti
+		seq	$t3, $t2, $t1		# Katsotaan onko pinon päällä eksponentti
+		bnez	$t3, sPura
+		li	$t2, 0x2A		# Ladataan kertolasku
+		seq	$t3, $t2, $t1		# Katsotaan onko pinon päällä kertomerkki
+		bnez	$t3, sPura
+		li	$t2, 0x2F		# Ladataan jakolasku
+		seq	$t3, $t2, $t1		# Katsotaan onko pinon päällimmäinen jakomerkki
+		bnez 	$t3, sPura
+		li	$t2, 0x2B		# Ladataan pluslasku
+		seq	$t3, $t2, $t1		# Onko pinon päällimmäinen plusmerkki
+		bnez	$t3, sPura
+		li	$t2, 0x2D		# Ladataan vähennyslasku
+		seq	$t3, $t2, $t1		# Onko pinon päällimmäinen miinusmerkki
+		bnez	$t3, sPura
+		j	lisaaPinoon
+		
+sPura:		sw	$t1, 0($s1)
 		addi	$s2, $s2, -1
 		addi	$s3, $s3, 1
 		addi	$s1, $s1, 4
 		addi	$sp, $sp, 4
-		j	lisaaPinoon
+		j	summaVertailu
 
 kasvatus:	
 		addi	$s0, $s0, 1
@@ -135,8 +152,8 @@ pinoTyhja:
 		addi	$s5, $zero, 0x10014000	# Ulostulopinon osoite
 		addi	$sp, $sp, -4
 		
-laske:		lw	$t0, 8($s5)		# Ladataan merkki ulostulopinosta
-break:		j	break
+laske:		lw	$t0, 16($s5)		# Ladataan merkki ulostulopinosta
+breaka:		j	breaka
 		addi	$s3, $s3, -1		# Vähennetään ulostulopinon laskuria
 						# Onko numero vai operaattori
 						
