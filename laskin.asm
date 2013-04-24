@@ -11,7 +11,6 @@ pilkku:		.byte	0x2C
 ylaraja:	.byte	0x39
 alaraja:	.byte	0x30
 
-		.space 31
 
 alkuViesti:	.asciiz	"Syötä lauseke: "
 lauseke:	.asciiz ""
@@ -171,40 +170,48 @@ laske:		lw	$t0, 0($s5)		# Ladataan merkki ulostulopinosta
 
 laskePotenssi: 	j laskePotenssi
 
-laskeSumma:	lwc1	$f0, 8($sp)
-		lwc1	$f1, 4($sp)
+laskeSumma:	addi	$sp, $sp, 4
+		lwc1	$f0, 0($sp)
+		addi	$sp, $sp, 4
+		lwc1	$f1, 0($sp)
 		
 		add.s	$f0, $f0, $f1
-		swc1	$f0, 4($sp)
+		swc1	$f0, 0($sp)
 		addi	$s5, $s5, 4
-		addi	$sp, $sp, 4
+		addi	$sp, $sp, -4
 		j	laske
 		
-laskeErotus:	lwc1	$f0, 8($sp)
-		lwc1	$f1, 4($sp)
-		
-		sub.s	$f0, $f0, $f1
-		swc1	$f0, 4($sp)
-		addi	$s5, $s5, 4
+laskeErotus:	addi	$sp, $sp, 4
+		lwc1	$f0, 0($sp)
 		addi	$sp, $sp, 4
+		lwc1	$f1, 0($sp)
+		
+		sub.s	$f0, $f1, $f0
+		swc1	$f0, 0($sp)
+		addi	$s5, $s5, 4
+		addi	$sp, $sp, -4
 		j	laske
 		
-laskeKerto:	lwc1	$f0, 8($sp)
-		lwc1	$f1, 4($sp)
+laskeKerto:	addi	$sp, $sp, 4
+		lwc1	$f0, 0($sp)
+		addi	$sp, $sp, 4
+		lwc1	$f1, 0($sp)
 		
 		mul.s	$f0, $f0, $f1
-		swc1	$f0, 4($sp)
+		swc1	$f0, 0($sp)
 		addi	$s5, $s5, 4
-		addi	$sp, $sp, 4
+		addi	$sp, $sp, -4
 		j	laske
 		
-laskeJako:	lwc1	$f0, 8($sp)
-		lwc1	$f1, 4($sp)
-		
-		div.s	$f0, $f0, $f1
-		swc1	$f0, 4($sp)
-		addi	$s5, $s5, 4
+laskeJako:	addi	$sp, $sp, 4
+		lwc1	$f0, 0($sp)
 		addi	$sp, $sp, 4
+		lwc1	$f1, 0($sp)
+		
+		div.s	$f0, $f1, $f0
+		swc1	$f0, 0($sp)
+		addi	$s5, $s5, 4
+		addi	$sp, $sp, -4
 		j	laske
 		
 loppu:		li	$v0, 2
