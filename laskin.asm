@@ -152,8 +152,7 @@ pinoTyhja:
 		addi	$s5, $zero, 0x10014000	# Ulostulopinon osoite
 		addi	$sp, $sp, -4
 		
-laske:		lw	$t0, 16($s5)		# Ladataan merkki ulostulopinosta
-breaka:		j	breaka
+laske:		lw	$t0, 0($s5)		# Ladataan merkki ulostulopinosta
 		addi	$s3, $s3, -1		# Vähennetään ulostulopinon laskuria
 						# Onko numero vai operaattori
 						
@@ -167,49 +166,51 @@ breaka:		j	breaka
 		sw	$t0, 0($sp)
 		addi	$sp, $sp, -4
 		addi	$s5, $s5, 4
-		addi	$s2, $s2, 1
 		addi	$s3, $s3, -1
 		j	laske
 
 laskePotenssi: 	j laskePotenssi
 
 laskeSumma:	lwc1	$f0, 8($sp)
-		addi	$s2, $s2, -1
 		lwc1	$f1, 4($sp)
 		
 		add.s	$f0, $f0, $f1
 		swc1	$f0, 4($sp)
 		addi	$s5, $s5, 4
+		addi	$sp, $sp, 4
 		j	laske
 		
 laskeErotus:	lwc1	$f0, 8($sp)
-		addi	$s2, $s2, -1
 		lwc1	$f1, 4($sp)
 		
 		sub.s	$f0, $f0, $f1
 		swc1	$f0, 4($sp)
 		addi	$s5, $s5, 4
+		addi	$sp, $sp, 4
 		j	laske
 		
 laskeKerto:	lwc1	$f0, 8($sp)
-		addi	$s2, $s2, -1
 		lwc1	$f1, 4($sp)
 		
 		mul.s	$f0, $f0, $f1
 		swc1	$f0, 4($sp)
 		addi	$s5, $s5, 4
+		addi	$sp, $sp, 4
 		j	laske
 		
 laskeJako:	lwc1	$f0, 8($sp)
-		addi	$s2, $s2, -1
 		lwc1	$f1, 4($sp)
 		
 		div.s	$f0, $f0, $f1
 		swc1	$f0, 4($sp)
 		addi	$s5, $s5, 4
+		addi	$sp, $sp, 4
 		j	laske
 		
-loppu:		j	loppu
+loppu:		li	$v0, 2
+		mov.s	$f12, $f0
+		syscall
+oikealoppu:	j	oikealoppu
 
 
 ##-******************************************************************************************-##
