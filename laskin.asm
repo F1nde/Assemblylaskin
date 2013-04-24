@@ -152,8 +152,6 @@ laske:		lw	$t0, 0($s5)		# Ladataan merkki ulostulopinosta
 		j	laske
 
 laskePotenssi: 	j laskePotenssi
-laskeKerto:	j laskeKerto
-laskeJako:	j laskeJako
 
 laskeSumma:	lwc1	$f0, 8($sp)
 		addi	$s2, $s2, -1
@@ -169,6 +167,24 @@ laskeErotus:	lwc1	$f0, 8($sp)
 		lwc1	$f1, 4($sp)
 		
 		sub.s	$f0, $f0, $f1
+		swc1	$f0, 4($sp)
+		addi	$s5, $s5, 4
+		j	laske
+		
+laskeKerto:	lwc1	$f0, 8($sp)
+		addi	$s2, $s2, -1
+		lwc1	$f1, 4($sp)
+		
+		mul.s	$f0, $f0, $f1
+		swc1	$f0, 4($sp)
+		addi	$s5, $s5, 4
+		j	laske
+		
+laskeJako:	lwc1	$f0, 8($sp)
+		addi	$s2, $s2, -1
+		lwc1	$f1, 4($sp)
+		
+		div.s	$f0, $f0, $f1
 		swc1	$f0, 4($sp)
 		addi	$s5, $s5, 4
 		j	laske
