@@ -80,22 +80,24 @@ expVertailu:
 		addi	$sp, $sp, 4
 		j	expVertailu
 
-kertoVertailu:	lw	$t1, 4($sp)		
-		li	$t2, 0x2A		# kertolasku	
-		seq	$t3, $t1, $t2		# jos kertolasku
-		li	$t2, 0x2F		# jakolasku
-		seq	$t4, $t1, $t2
-		or	$t2, $t3, $t4
-		beqz	$t2, summaVertailu
-
-		sw	$t1, 0($s1)
+kertoVertailu	lw	$t1, 4($sp)		# Tarkastellaan pinon ensimmäistä merkkiä
+		li	$t2, 0x5E		# Ladataan eksponentti
+		seq	$t3, $t2, $t1		# Katsotaan onko pinon päällä eksponentti
+		bnez	$t3, kPura
+		li	$t2, 0x2A		# Ladataan kertolasku
+		seq	$t3, $t2, $t1		# Katsotaan onko pinon päällä kertomerkki
+		bnez	$t3, kPura
+		li	$t2, 0x2F		# Ladataan jakolasku
+		seq	$t3, $t2, $t1		# Katsotaan onko pinon päällimmäinen jakomerkki
+		bnez 	$t3, kPura
+		j	lisaaPinoon
+		
+kPura:		sw	$t1, 0($s1)
 		addi	$s2, $s2, -1
 		addi	$s3, $s3, 1
 		addi	$s1, $s1, 4
 		addi	$sp, $sp, 4
-
-		beq	$t0, 0x2A, lisaaPinoon
-		beq	$t0, 0x2F, lisaaPinoon
+		j	kertoVertailu
 
 summaVertailu:	lw	$t1, 4($sp)
 		sw	$t1, 0($s1)
@@ -117,9 +119,9 @@ lisaaPinoon:
 		j	alg
 		# Kaikki merkit haettu, käydään läpi pinoa
 		# Operaattori ulostulojonoon
-VIRHE:		j	VIRHE		
-parsittu:	
-		addi	$sp, $sp, 4
+VIRHE:		j	VIRHE
+
+parsittu:	addi	$sp, $sp, 4
 		beqz	$s2, pinoTyhja
 		lw	$t0, 0($sp)
 		addi	$s2, $s2, -1
@@ -133,7 +135,8 @@ pinoTyhja:
 		addi	$s5, $zero, 0x10014000	# Ulostulopinon osoite
 		addi	$sp, $sp, -4
 		
-laske:		lw	$t0, 0($s5)		# Ladataan merkki ulostulopinosta
+laske:		lw	$t0, 8($s5)		# Ladataan merkki ulostulopinosta
+break:		j	break
 		addi	$s3, $s3, -1		# Vähennetään ulostulopinon laskuria
 						# Onko numero vai operaattori
 						
