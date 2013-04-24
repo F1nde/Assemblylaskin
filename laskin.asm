@@ -80,7 +80,7 @@ expVertailu:
 		addi	$sp, $sp, 4
 		j	expVertailu
 
-kertoVertailu	lw	$t1, 4($sp)		# Tarkastellaan pinon ensimmäistä merkkiä
+kertoVertailu:	lw	$t1, 4($sp)		# Tarkastellaan pinon ensimmäistä merkkiä
 		li	$t2, 0x5E		# Ladataan eksponentti
 		seq	$t3, $t2, $t1		# Katsotaan onko pinon päällä eksponentti
 		bnez	$t3, kPura
@@ -90,6 +90,7 @@ kertoVertailu	lw	$t1, 4($sp)		# Tarkastellaan pinon ensimmäistä merkkiä
 		li	$t2, 0x2F		# Ladataan jakolasku
 		seq	$t3, $t2, $t1		# Katsotaan onko pinon päällimmäinen jakomerkki
 		bnez 	$t3, kPura
+		beq	$t7,1,jatkot
 		j	lisaaPinoon
 		
 kPura:		sw	$t1, 0($s1)
@@ -97,7 +98,17 @@ kPura:		sw	$t1, 0($s1)
 		addi	$s3, $s3, 1
 		addi	$s1, $s1, 4
 		addi	$sp, $sp, 4
+		beqz	$s2, lisaaPinoon	# Jos pino tyhja, we are done
+		addi	$t7, $zero, 1
 		j	kertoVertailu
+
+jatkot:		beqz	$s2, lisaaPinoon	# Jos pinossa ei ole mitään lisätään suoraan pinoon
+		li	$t2, 0x2B		# Ladataan pluslasku
+		seq	$t3, $t2, $t1		# Katsotaan onko pinon päällä plusmerkki
+		bnez	$t3, kPura
+		li	$t2, 0x2D		# Ladataan miinuslasku
+		seq	$t3, $t2, $t1		# Katsotaan onko pinon päällimmäinen miinusmerkki
+		bnez	$t3, kPura
 
 summaVertailu:	lw	$t1, 4($sp)
 		sw	$t1, 0($s1)
@@ -135,8 +146,8 @@ pinoTyhja:
 		addi	$s5, $zero, 0x10014000	# Ulostulopinon osoite
 		addi	$sp, $sp, -4
 		
-laske:		lw	$t0, 8($s5)		# Ladataan merkki ulostulopinosta
-break:		j	break
+laske:		lw	$t0, 0($s5)		# Ladataan merkki ulostulopinosta
+#break:		j	break
 		addi	$s3, $s3, -1		# Vähennetään ulostulopinon laskuria
 						# Onko numero vai operaattori
 						
@@ -192,7 +203,10 @@ laskeJako:	lwc1	$f0, 8($sp)
 		addi	$s5, $s5, 4
 		j	laske
 		
-loppu:		j	loppu
+loppu:		li	$v0, 2
+		mov.s	$f12, $f0
+		syscall
+oikealoppu:	j	oikealoppu
 
 
 ##-******************************************************************************************-##
