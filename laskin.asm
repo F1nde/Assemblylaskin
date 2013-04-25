@@ -1,18 +1,10 @@
 ## Assemblylaskin
   	.globl	main
 		.data
-
-potenssi:	.byte	0x5E
-kerto:		.byte	0x2A
-jako:		.byte	0x2F
-summa:		.byte	0x2B
-vahennys:	.byte	0x2D
-pilkku:		.byte	0x2C
 ylaraja:	.byte	0x39
 alaraja:	.byte	0x30
-
-
 alkuViesti:	.asciiz	"Syötä lauseke: "
+virheViesti:	.asciiz "Virhe!"
 lauseke:	.asciiz ""
 		.space	31
 		.align	2
@@ -62,23 +54,6 @@ tutkiOperaattori:
 
 		j	VIRHE
 
-expVertailu: 
-						# Katsotaan onko eksponentteja
-
-		beqz	$s2, lisaaPinoon	# Jos pinossa ei ole mitään lisätään suoraan pinoon
-						# Katsotaan onko pinon päällimmäinen
-		lw	$t1, 4($sp)		# potenssi, kerto, tai jakolasku
-
-		li	$t2, 0x5E		# eksponentti
-		seq	$t3, $t1, $t2		# Jos eksponentti
-		beqz	$t3, kertoVertailu
-		sw	$t1, 0($s1)
-		addi	$s2, $s2, -1
-		addi	$s3, $s3, 1
-		addi	$s1, $s1, 4
-		addi	$sp, $sp, 4
-		j	expVertailu
-
 kertoVertailu:	lw	$t1, 4($sp)		# Tarkastellaan pinon ensimmäistä merkkiä
 		li	$t2, 0x5E		# Ladataan eksponentti
 		seq	$t3, $t2, $t1		# Katsotaan onko pinon päällä eksponentti
@@ -89,13 +64,13 @@ kertoVertailu:	lw	$t1, 4($sp)		# Tarkastellaan pinon ensimmäistä merkkiä
 		li	$t2, 0x2F		# Ladataan jakolasku
 		seq	$t3, $t2, $t1		# Katsotaan onko pinon päällimmäinen jakomerkki
 		bnez 	$t3, kPura
-		j	lisaaPinoon
+		j	lisaaPinoon		
 		
-kPura:		sw	$t1, 0($s1)
-		addi	$s2, $s2, -1
-		addi	$s3, $s3, 1
-		addi	$s1, $s1, 4
-		addi	$sp, $sp, 4
+kPura:		sw	$t1, 0($s1)		# Tallennetaan pinon päällimmäinen merkki ulosmenojonoon
+		addi	$s2, $s2, -1		# Pienennetään pinon alkioiden laskuria
+		addi	$s3, $s3, 1		# Kasvatetaan ulosmenojonon laskuria
+		addi	$s1, $s1, 4		# Kasvatetaan ulosmenojonon osoitinta
+		addi	$sp, $sp, 4		# Lasketaan pino-osoitinta
 		j	kertoVertailu
 
 summaVertailu:	lw	$t1, 4($sp)		# Tarkastellaan pinon ensimmäistä merkkiä
@@ -116,61 +91,76 @@ summaVertailu:	lw	$t1, 4($sp)		# Tarkastellaan pinon ensimmäistä merkkiä
 		bnez	$t3, sPura
 		j	lisaaPinoon
 		
-sPura:		sw	$t1, 0($s1)
-		addi	$s2, $s2, -1
-		addi	$s3, $s3, 1
-		addi	$s1, $s1, 4
-		addi	$sp, $sp, 4
+sPura:		sw	$t1, 0($s1)		# Pinon 1. merkki tallennetaan ulosmenojonoon
+		addi	$s2, $s2, -1		# Pinon laskurin pienennys
+		addi	$s3, $s3, 1		# Kasvatetaan ulosmenojonon laskuria
+		addi	$s1, $s1, 4		# Kasvatetaan ulosmenojonon osoitinta
+		addi	$sp, $sp, 4		# Lasketaan pino-osoitinta
 		j	summaVertailu
 
 kasvatus:	
-		addi	$s0, $s0, 1
-		j	alg
+		addi	$s0, $s0, 1		# Osoitin syötteen seuraavaan merkkiin
+		j	alg			# Hypätään takaisin käymään läpi syötettä
 
 lisaaPinoon:	
-		addi	$s2, $s2, 1
-		sw	$t0, 0($sp)
-		addi	$sp, $sp, -4
-		addi	$s0, $s0, 1
-		j	alg
-		# Kaikki merkit haettu, käydään läpi pinoa
-		# Operaattori ulostulojonoon
+		addi	$s2, $s2, 1		# Pinon alkiolaskuria kasvatetaan
+		sw	$t0, 0($sp)		# Tallennetaan pinoon
+		addi	$sp, $sp, -4		# Pino-osoitinta nostetaan ottamaan vastaan seuraava alkio
+		addi	$s0, $s0, 1		# Osoitin syötteen seuraavaan merkkiin
+		j	alg			# Palataan käymään läpi seuraavaa merkkiä
+		
 VIRHE:		j	VIRHE
 
-parsittu:	addi	$sp, $sp, 4
-		beqz	$s2, pinoTyhja
-		lw	$t0, 0($sp)
-		addi	$s2, $s2, -1
-		addi	$s3, $s3, 1
-		sw	$t0, 0($s1)
-		addi	$s1, $s1, 4
-		j	parsittu
+parsittu:	addi	$sp, $sp, 4		# Pino-osoitinta lasketaan
+		beqz	$s2, pinoTyhja		# Kun pino on purettu siirrytään seuraavaan vaiheeseen( pinolaskuri 0 )
+		lw	$t0, 0($sp)		# Ladataan merkki pinosta
+		addi	$s2, $s2, -1		# Pienennetään pinolaskuria
+		addi	$s3, $s3, 1		# Kasvatetaan ulosmenojonon laskuria
+		sw	$t0, 0($s1)		# Tallennetaan pinosta ladattu merkki ulosmenojonoon
+		addi	$s1, $s1, 4		# Ulosmenojonon osoitetta kasvatetaan
+		j	parsittu		# Käydään läpi kunnes pino on tyhjä
 
 # Tyhjätään ulostulojono RPN-algoritmilla ja lasketaan
 pinoTyhja:	
 		addi	$s5, $zero, 0x10014000	# Ulostulopinon osoite
-		addi	$sp, $sp, -4
+		addi	$sp, $sp, -4		# Pino-osoittimen valmistelu
 		
 laske:		lw	$t0, 0($s5)		# Ladataan merkki ulostulopinosta
 		addi	$s3, $s3, -1		# Vähennetään ulostulopinon laskuria
 						# Onko numero vai operaattori
 						
-		beq	$t0, 0x5E, laskePotenssi
-		beq	$t0, 0x2A, laskeKerto
-		beq	$t0, 0x2F, laskeJako
-		beq	$t0, 0x2B, laskeSumma
-		beq	$t0, 0x2D, laskeErotus
+		beq	$t0, 0x5E, laskePotenssi	# Ladattu merkki potenssi
+		beq	$t0, 0x2A, laskeKerto		# Ladattu merkki kerto
+		beq	$t0, 0x2F, laskeJako		# Jako
+		beq	$t0, 0x2B, laskeSumma		# Summa
+		beq	$t0, 0x2D, laskeErotus		# Erotus
 		
-		beqz	$t0, loppu
-		sw	$t0, 0($sp)
-		addi	$sp, $sp, -4
-		addi	$s5, $s5, 4
-		addi	$s3, $s3, -1
+		beqz	$t0, loppu			# Ladattu 0, lopetetaan lukeminen
+		sw	$t0, 0($sp)			# Tallennetaan merkki pinoon
+		addi	$sp, $sp, -4			# Nostetaan pino-osoitinta
+		addi	$s5, $s5, 4			# Kasvatetaan jonon-osoitetta
+		addi	$s3, $s3, -1			# Jonolaskurin pienennys
 		j	laske
 
-laskePotenssi: 	j laskePotenssi
+laskePotenssi: 	addi	$sp, $sp, 4			# Pino-osoittimen laskeminen
+		lwc1	$f0, 0($sp)			# Ladataan ensimmäinen luku pinosta
+		addi	$sp, $sp, 4			# Pino-osoittimen laskeminen
+		lwc1	$f1, 0($sp)			# Ladataan pinon toinen luku$
+		cvt.w.s	$f5, $f1
+		and	$t6, $t6, $zero			# Nollataan t6
+		mfc1	$t5, $f5
+		
+potenssiloop:	beq	$t5, $t6, pv2
+		mul.s	$f0, $f1, $f1
+		addi	$t6, $t6, 1
+		j	potenssiloop
+		
+pv2:		swc1	$f0, 0($sp)			# Tallennetaan vastaus pinoon
+		addi	$s5, $s5, 4			# Kasvatetaan ulosmenojonon lukukohtaa
+		addi	$sp, $sp, -4			# Nostetaan pino-osoitinta
+		j	laske				# Takaisin laskuun
 
-laskeSumma:	addi	$sp, $sp, 4
+laskeSumma:	addi	$sp, $sp, 4			
 		lwc1	$f0, 0($sp)
 		addi	$sp, $sp, 4
 		lwc1	$f1, 0($sp)
