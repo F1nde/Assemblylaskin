@@ -1,109 +1,278 @@
-# Tietokonearkkitehtuuri 1, harjoitustyö 4, laskin
-
-		.globl main
+## Assemblylaskin
+  	.globl	main
 		.data
-		
-# Määritetään tarkastelua varten merkkien ascii-arvot 
-# heksalukuina
-potenssi:	.byte	0x5E
-kerto:		.byte	0x2A
-jako:		.byte	0x2F
-summa:		.byte	0x2B
-vahennys:	.byte	0x2D
-pilkku:		.byte	0x2C
 ylaraja:	.byte	0x39
 alaraja:	.byte	0x30
-
-# Määritetään ohjelman aikana tarvittavat tulosteet
-ALKUTULOSTE:	.asciiz "Syötä lauseke: "
-VIRHETULOSTE:	.asciiz "\nVirheellinen syöte.\n"
-
-SYOTE:		.asciiz ""
-		.space 30
+alkuViesti:	.asciiz	"Sy√∂t√§ lauseke: "
+virheViesti:	.asciiz "Virhe!"
+lauseke:	.asciiz ""
+		.space	31
+		.align	2
 
 		.text
 
-main:		li	$v0, 4				# Ladataan syscallin string tulostuspalvelu
-		la	$a0, ALKUTULOSTE		# Osoite josta tuloste luetaan
+main:	li	$v0, 4
+		la	$a0, alkuViesti
 		syscall
-		and	$s0, $zero, $s0			# Alustetaan rekisteri, johon luettu merkki asetetaan
-		and	$t0, $zero, $t0			# Alustetaan laskuri, jolla määritetään merkille oikea 
-							# tarkastelulohko
-		
-lueSyote:
-		li	$v0, 12				# Ladataan syscallin charin lukupalvelu
-		la	$s0, SYOTE			# Osoite, johon luettu merkki ohjataan
+
+		li	$v0, 8
+		la	$a0, lauseke
+		li	$a1, 31
 		syscall
-		sb	$v0, 0($s0)			# Ladataan luettu merkki rekisteriin 
-		
-		# 1. kierroksen tarkastus
-		beqz	$t0, v1tarkistus 		# Ensimmäisen merkin on oltava numero
-		
-		# 2. kierroksen tarkastus
-		beq	$t0, 1, v2tarkistus		# Toinen merkki saa olla joko numero tai pilkku. 
-							# Jos luetaan pilkku, siirrytään seuraavaan tarkasteluun,
-							# muuten pysytään samassa
-		
-		# 3. kierroksen tarkastus		
-		#beq	$t0, 2, v3tarkistus		# Pilkun jälkeen on tultava numero
-		
-		# 4. kierroksen tarkastus
-		#beq	$t0, 3, v4tarkistus		# Pilkun jälkeinen toinen merkki voi olla joko numero
-							# tai operaattori. Jos luetaan operaattori, siirrytään
-							# seuraavaan tarkasteluun, muuten pysytään samassa.
 
-		# Jos löydetään operaattori, hypätään tarkistusten alkuun.
-		# Erikoistilanteena potenssi, jolloin merkin jälkeen etsitään kokonaislukua		
+		la	$s0, lauseke					# Osoitin lausekkeeseen
+		addi	$s1, $zero, 0x10014000		# Ulostulopino
+		and	$s2, $s2, $zero					# Pinon laskuri
+		and	$s3, $s3, $zero					# Ulostulopinon laskuri
+
+alg:	lb	$t0, 0($s0)						# Ladataan merkki osoittimesta
+		lb	$t1, alaraja					# Ladataan numeroiden ascii-alaraja
+		sge	$t2, $t0, $t1					# Katsotaan, onko luettu merkki rajan yl√§puolella
+		lb	$t1, ylaraja					# Ladataan numeroiden ascii-yl√§raja
+		sle	$t3, $t0, $t1					# Katsotaan, onko luettu merkki rajan alapuolella
+		and	$t1, $t2, $t3					# Jos siis rajojen v√§liss√§, merkki on numero ja 
+											# asetetaan $t1 = 1
+		beqz	$t1 tutkiOperaattori		# Jos ei ole numero, katsotaan onko jokin operaattori
+		jal	string2float
+		j	alg		
+
+tutkiOperaattori:
+		seq	$t1, $t0, 0x20					# Onko space
+		beq	$t1, 1,	kasvatus
+		seq	$t1, $t0, 0x5E					# Onko potenssi
+		beq	$t1, 1, lisaaPinoon
+		seq	$t1, $t0, 0x2A					# onko kerto
+		beq	$t1, 1, kertoVertailu
+		seq	$t1, $t0, 0x2F					# Onko jako
+		beq	$t1, 1, kertoVertailu
+		seq	$t1, $t0, 0x2B					# Onko summa
+		beq	$t1, 1, summaVertailu
+		seq	$t1, $t0, 0x2D					# Onko v√§hennys
+		beq	$t1, 1, summaVertailu
+		beqz	$t0, parsittu
+		beq	$t0, 10, parsittu
+
+		j	VIRHE
+
+kertoVertailu:	lw	$t1, 4($sp)				# Tarkastellaan pinon ensimm√§ist√§ merkki√§
+		li	$t2, 0x5E						# Ladataan eksponentti
+		seq	$t3, $t2, $t1					# Katsotaan onko pinon p√§√§ll√§ eksponentti
+		bnez	$t3, kPura
+		li	$t2, 0x2A						# Ladataan kertolasku
+		seq	$t3, $t2, $t1					# Katsotaan onko pinon p√§√§ll√§ kertomerkki
+		bnez	$t3, kPura
+		li	$t2, 0x2F						# Ladataan jakolasku
+		seq	$t3, $t2, $t1					# Katsotaan onko pinon p√§√§llimm√§inen jakomerkki
+		bnez 	$t3, kPura
+		j	lisaaPinoon		
 		
-pinotallennus:	j	lueSyote			# Tähän pinoon tallentaminen
+kPura:		sw	$t1, 0($s1)					# Tallennetaan pinon p√§√§llimm√§inen merkki ulosmenojonoon
+		addi	$s2, $s2, -1				# Pienennet√§√§n pinon alkioiden laskuria
+		addi	$s3, $s3, 1					# Kasvatetaan ulosmenojonon laskuria
+		addi	$s1, $s1, 4					# Kasvatetaan ulosmenojonon osoitinta
+		addi	$sp, $sp, 4					# Lasketaan pino-osoitinta
+		j	kertoVertailu
 
-pilkkutilanne:	j 	pilkkutilanne			# Mitä täällä tehdään?
-
-loppu:		j	loppu
-
-v1tarkistus:	lb	$t1, alaraja			# Ladataan numeroiden ascii-alaraja
-		lb	$t3, 0($s0)			# Ladataan luettu merkki
-		sge	$t2, $t3, $t1			# Katsotaan, onko luettu merkki rajan yläpuolella
-		lb	$t1, ylaraja			# Ladtaan numeroiden yläraja
-		sle	$t3, $t3, $t1			# Katsotaan, onko luettu merkki rajan alapuolella
+summaVertailu:	lw	$t1, 4($sp)				# Tarkastellaan pinon ensimm√§ist√§ merkki√§
+		li	$t2, 0x5E						# Ladataan eksponentti
+		seq	$t3, $t2, $t1					# Katsotaan onko pinon p√§√§ll√§ eksponentti
+		bnez	$t3, sPura
+		li	$t2, 0x2A						# Ladataan kertolasku
+		seq	$t3, $t2, $t1					# Katsotaan onko pinon p√§√§ll√§ kertomerkki
+		bnez	$t3, sPura
+		li	$t2, 0x2F						# Ladataan jakolasku
+		seq	$t3, $t2, $t1					# Katsotaan onko pinon p√§√§llimm√§inen jakomerkki
+		bnez 	$t3, sPura
+		li	$t2, 0x2B						# Ladataan pluslasku
+		seq	$t3, $t2, $t1					# Onko pinon p√§√§llimm√§inen plusmerkki
+		bnez	$t3, sPura
+		li	$t2, 0x2D						# Ladataan v√§hennyslasku
+		seq	$t3, $t2, $t1					# Onko pinon p√§√§llimm√§inen miinusmerkki
+		bnez	$t3, sPura
+		j	lisaaPinoon
 		
-		and	$t1, $t2, $t3			# Jos siis rajojen välissä, merkki on numero ja 
-							# asetetaan $t1 = 1
-		beqz	$t1, virhe			# Jos merkki ei ollut numero, hypätään virheeseen
-		addi	$t0, $t0, 1			# Kasvatetaan tarkastelulaskuria
-		j	pinotallennus			# Hypätään pinotallennukseen, jossa luettu merkki asetetaan
-							# pinoon
-							
-v2tarkistus:	lb	$t1, alaraja			# Ladataan numeroiden ascii-alaraja
-		lb	$t3, 0($s0)			# Ladataan luettu merkki
-		sge	$t2, $t3, $t1			# Katsotaan, onko luettu merkki rajan yläpuolella
-		lb	$t1, ylaraja			# Ladtaan numeroiden yläraja
-		sle	$t4, $t3, $t1			# Katsotaan, onko luettu merkki rajan alapuolella
+sPura:		sw	$t1, 0($s1)					# Pinon 1. merkki tallennetaan ulosmenojonoon
+		addi	$s2, $s2, -1				# Pinon laskurin pienennys
+		addi	$s3, $s3, 1					# Kasvatetaan ulosmenojonon laskuria
+		addi	$s1, $s1, 4					# Kasvatetaan ulosmenojonon osoitinta
+		addi	$sp, $sp, 4					# Lasketaan pino-osoitinta
+		j	summaVertailu
+
+kasvatus:	
+		addi	$s0, $s0, 1					# Osoitin sy√∂tteen seuraavaan merkkiin
+		j	alg								# Hyp√§t√§√§n takaisin k√§ym√§√§n l√§pi sy√∂tett√§
+
+lisaaPinoon:	
+		addi	$s2, $s2, 1					# Pinon alkiolaskuria kasvatetaan
+		sw	$t0, 0($sp)						# Tallennetaan pinoon
+		addi	$sp, $sp, -4				# Pino-osoitinta nostetaan ottamaan vastaan seuraava alkio
+		addi	$s0, $s0, 1					# Osoitin sy√∂tteen seuraavaan merkkiin
+		j	alg								# Palataan k√§ym√§√§n l√§pi seuraavaa merkki√§
 		
-		and	$t1, $t2, $t4			# Jos siis rajojen välissä, merkki on numero ja 
-							# asetetaan $t1 = 1
-		beq	$t1, 1, pinotallennus		# Jos kyseessä numero, hypätään pinotallennukseen
+VIRHE:		j	VIRHE
+
+parsittu:	addi	$sp, $sp, 4				# Pino-osoitinta lasketaan
+		beqz	$s2, pinoTyhja				# Kun pino on purettu siirryt√§√§n seuraavaan vaiheeseen( pinolaskuri 0 )
+		lw	$t0, 0($sp)						# Ladataan merkki pinosta
+		addi	$s2, $s2, -1				# Pienennet√§√§n pinolaskuria
+		addi	$s3, $s3, 1					# Kasvatetaan ulosmenojonon laskuria
+		sw	$t0, 0($s1)						# Tallennetaan pinosta ladattu merkki ulosmenojonoon
+		addi	$s1, $s1, 4					# Ulosmenojonon osoitetta kasvatetaan
+		j	parsittu						# K√§yd√§√§n l√§pi kunnes pino on tyhj√§
+
+# Tyhj√§t√§√§n ulostulojono RPN-algoritmilla ja lasketaan
+pinoTyhja:	
+		addi	$s5, $zero, 0x10014000		# Ulostulopinon osoite
+		addi	$sp, $sp, -4				# Pino-osoittimen valmistelu
 		
-		lb	$t1, pilkku			# Ladataan numeroiden ascii-alaraja
-		beq	$t1, $t3, pilkkutilanne		# Jos löydetään pilkku, hypätään pilkkutilanteeseen
+laske:		lw	$t0, 0($s5)					# Ladataan merkki ulostulopinosta
+		addi	$s3, $s3, -1				# V√§hennet√§√§n ulostulopinon laskuria
+											# Onko numero vai operaattori
+						
+		beq	$t0, 0x5E, laskePotenssi		# Ladattu merkki potenssi
+		beq	$t0, 0x2A, laskeKerto			# Ladattu merkki kerto
+		beq	$t0, 0x2F, laskeJako			# Jako
+		beq	$t0, 0x2B, laskeSumma			# Summa
+		beq	$t0, 0x2D, laskeErotus			# Erotus
 		
-		j	virhe				# Jos kyseessä ei ollut numero eikä pilkku, hypätään
-							# virheeseen
-	
-virhe:		
-		li	$v0, 4				# Ladataan syscallin string tulostuspalvelu
-		la	$a0, VIRHETULOSTE		# Osoite josta tuloste luetaan
-		syscall	
+		beqz	$t0, loppu					# Ladattu 0, lopetetaan lukeminen
+		sw	$t0, 0($sp)						# Tallennetaan merkki pinoon
+		addi	$sp, $sp, -4				# Nostetaan pino-osoitinta
+		addi	$s5, $s5, 4					# Kasvatetaan jonon-osoitetta
+		addi	$s3, $s3, -1				# Jonolaskurin pienennys
+		j	laske
 
-		j	main				# Hypätään takaisin ohjelman alkuun
+laskePotenssi: 	addi	$sp, $sp, 4			# Pino-osoittimen laskeminen
+		lwc1	$f0, 0($sp)					# Ladataan ensimm√§inen luku pinosta
+		addi	$sp, $sp, 4					# Pino-osoittimen laskeminen
+		lwc1	$f1, 0($sp)					# Ladataan pinon toinen luku$
+		cvt.w.s	$f5, $f1
+		and	$t6, $t6, $zero					# Nollataan t6
+		mfc1	$t5, $f5
 		
-#aliohjelmat
-lisaaminen:	jr	$ra
+potenssiloop:	beq	$t5, $t6, pv2
+		mul.s	$f0, $f1, $f1
+		addi	$t6, $t6, 1
+		j	potenssiloop
+		
+pv2:		swc1	$f0, 0($sp)				# Tallennetaan vastaus pinoon
+		addi	$s5, $s5, 4					# Kasvatetaan ulosmenojonon lukukohtaa
+		addi	$sp, $sp, -4				# Nostetaan pino-osoitinta
+		j	laske							# Takaisin laskuun
 
-vahennys:	jr	$ra
+laskeSumma:	addi	$sp, $sp, 4			
+		lwc1	$f0, 0($sp)
+		addi	$sp, $sp, 4
+		lwc1	$f1, 0($sp)
+		
+		add.s	$f0, $f0, $f1
+		swc1	$f0, 0($sp)
+		addi	$s5, $s5, 4
+		addi	$sp, $sp, -4
+		j	laske
+		
+laskeErotus:	addi	$sp, $sp, 4
+		lwc1	$f0, 0($sp)
+		addi	$sp, $sp, 4
+		lwc1	$f1, 0($sp)
+		
+		sub.s	$f0, $f1, $f0
+		swc1	$f0, 0($sp)
+		addi	$s5, $s5, 4
+		addi	$sp, $sp, -4
+		j	laske
+		
+laskeKerto:	addi	$sp, $sp, 4
+		lwc1	$f0, 0($sp)
+		addi	$sp, $sp, 4
+		lwc1	$f1, 0($sp)
+		
+		mul.s	$f0, $f0, $f1
+		swc1	$f0, 0($sp)
+		addi	$s5, $s5, 4
+		addi	$sp, $sp, -4
+		j	laske
+		
+laskeJako:	addi	$sp, $sp, 4
+		lwc1	$f0, 0($sp)
+		addi	$sp, $sp, 4
+		lwc1	$f1, 0($sp)
+		
+		div.s	$f0, $f1, $f0
+		swc1	$f0, 0($sp)
+		addi	$s5, $s5, 4
+		addi	$sp, $sp, -4
+		j	laske
+		
+loppu:		li	$v0, 2
+		mov.s	$f12, $f0
+		syscall
+oikealoppu:	j	oikealoppu
 
-kertominen:	jr	$ra
 
-jako:		jr	$ra
+##-******************************************************************************************-##
+# String2Float
+string2float:	li	$t0, 10					# Muunnoksessa tarvitaan kerrointa 10
+		mtc1	$t0, $f2					# Siirret√§√§n se apuprosessorille
+		cvt.s.w	$f2, $f2					# Muunnetaan numero floatiksi
 
-potenssi:	jr	$ra
+		li	$t0, 0							# Nollataan
+		mtc1	$t0, $f4					# Asetetaan rekisteri $f4 nollaksi (t√§st√§ tulee kokonaislukuosa )
+		cvt.s.w	$f4, $f4					# Muunnetaan liukuluvuksi rekisterin sis√§lt√∂
+
+		mtc1	$t0, $f6					# Murto-osan varasto $f6 asetetaan nollaksi
+		cvt.s.w	$f6, $f6					# Muunnetaan liukuluvuksi
+
+		li	$t4, 0							# Murto-osan numeroiden lukum√§√§r√§n nollaus
+		li	$t5, 0							# Tieto lis√§t√§√§nk√∂ murto-osaan vai kokonaislukuun
+
+lukulooppi:	lb	$t2, 0($s0)					# Ladataan merkki sy√∂tteest√§
+		bne	$t2, 0x2c, eiPilkkua			# Tutkitaan onko annettu merkki pilkku, jos ei niin hyp√§t√§√§n
+		li	$t5, 1							# Pilkun j√§lkeen murtolippu p√§√§lle
+		j	seuraavaMerkki					# Hyp√§t√§√§n osoittimen kasvatukseen
+
+eiPilkkua:									# Tutkitaan viel√§k√∂ luetaan lukua vai onko tultu loppuun
+		lb	$t6, ylaraja					# Numeroiden yl√§raja
+		sle	$t7, $t2, $t6					# Onko pienempi tai yht√§suuri kuin yl√§raja
+		lb	$t6, alaraja					# Numeroiden alaraja
+		sge	$t8, $t2, $t6					# Suurempi tai yht√§suuri
+		and	$t6, $t7, $t8					# Jos kumpikin ehto t√§yttyy -> numero
+
+		beqz	$t6, numeroLoppu			# Jos ei numero, niin hyp√§t√§√§n
+
+		beq	$t5, 1, lueMurto				# Jos murtolippu on p√§√§ll√§, hyp√§t√§√§n
+
+lueKokonais:	subi	$t2, $t2, 0x30		# Muutetaan ascii-merkki numeroksi
+		mtc1	$t2, $f10					# Siirret√§√§n merkki apuprosessorille
+		cvt.s.w	$f10, $f10					# Muunnetaan liukuluvuksi
+		mul.s	$f4, $f4, $f2				# Kerrotaan jo luettua aikaisempaa lukua kymmenell√§
+		add.s	$f4, $f4, $f10				# Lis√§t√§√§n merkki kerrottuun arvoon
+		j	seuraavaMerkki					# Siirryt√§√§n kasvattamaan laskuria
+
+lueMurto:	subi	$t2, $t2, 0x30			# Muutetaan ascii-merkki numeroksi
+		mtc1	$t2, $f10					# Siirret√§√§n numero apuprosessorille
+		cvt.s.w	$f10, $f10					# Muunnetaan floatiksi
+		mul.s	$f6, $f6, $f2		
+		add.s	$f6, $f6, $f10				# Lis√§t√§√§n merkki murto-osaan
+		addi	$t4, $t4, 1					# Kasvatetaan murto-osan numeroiden lukum√§√§r√§√§
+		j	seuraavaMerkki					# Siirryt√§√§n kasvattamaan laskuria
+
+seuraavaMerkki:	addi	$s0, $s0, 1			# Kasvatetaan luettavan merkin osoitetta
+		j	lukulooppi						# Luetaan seuraava merkki
+
+numeroLoppu:	beq	$t5, 0, ohitaMurto		# Jos numero on luettu loppuun eik√§ murto-osaa ole ohitetaan
+		li	$t0, 1							# Asetetaan $t0 1:kse
+		mtc1	$t0, $f20					# Kopioidaan 1 $f20:een
+		cvt.s.w	$f20, $f20					# Liukulukumuunnos
+
+murtoLooppi:	mul.s	$f20, $f20, $f2		# Kerrotaan f20 10:ll√§
+		addi	$t4, $t4, -1				# Pienennet√§√§n murto-osan numeroiden lukum√§√§r√§√§
+		bgtz	$t4, murtoLooppi			# Jos murto-osassa on numeroita j√§ljell√§ uudestaan
+		div.s	$f6, $f6, $f20				# Lopuksi jaetaan
+		add.s	$f4, $f4, $f6				# Ja summataan
+
+ohitaMurto:	mov.s	$f0, $f4				# Kopioidaan summa f0:aan
+		swc1	$f0, 0($s1)					# Tallennetaan arvo $s1:een
+		addi	$s3, $s3, 1
+		addi	$s1, $s1, 4
+		jr	$ra								# Palataan takaisin p√§√§ohjelmaan
